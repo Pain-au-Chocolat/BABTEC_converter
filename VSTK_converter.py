@@ -1,8 +1,6 @@
 from openpyxl import load_workbook
 from openpyxl.styles import Font
-
 import subprocess
-from time import sleep
 from isofits import *
 import random
 
@@ -22,9 +20,12 @@ print("No. is at position " + str(POS_Cell_No))
 
 
 def cell_part():
+    cell_no_list = []
     for i in range(1, 1000):
         if sh.cell(POS_Cell_No[0], i).value == "Part#\n":
-            return [POS_Cell_No[0], i]
+            cell_no_list.append(POS_Cell_No[0])
+            cell_no_list.append(i)
+    return cell_no_list
 POS_Cell_Part = cell_part()
 print("Part# is at position " + str(POS_Cell_Part))
 
@@ -44,11 +45,10 @@ def cell_last_characteristic():
 POS_Cell_Last_Characteristic = cell_last_characteristic()
 print("Last Characteristic is at position " + str(POS_Cell_Last_Characteristic))
 
-#TODO  read provided string and find right result to output.
-#      example output : (19.9 , 20.1, 0.2   ) or (I.O)
-#      example output : (LT   , UT  , Spread) or (text)
+#Read provided string and find right tolerances to output.
+#Example output : (19.9, 20.1) or (I.O)
+#Example output : (LT, UT) or (text)
 def tolerance_decoder(string):
-    type = 0
     #0: Undefined (I.O)
     #1: Diameter (7.5 , 8.5)
     #2: Length (7.5 , 8.5)
@@ -56,97 +56,102 @@ def tolerance_decoder(string):
     #4: Radius (7.5 , 8.5)
     #5: Chamfer (0.9 , 1.1)
     #6: Roughness (5.0 , 10.0)
-
+    print("---------------------------------------------------")
+    print("Focus on: " + string)
 
     if 'Diameter' in string:
-        type = 1
-        #print("Diameter found")
+        print("Diameter found")
         left_text_out = string.split("⌀", 1)[-1]
-        #print("Nominal and tolerance is: " + left_text_out)
+        print("Nominal and tolerance is: " + left_text_out)
         pre_nominal = left_text_out.split(" ", 1)[0]
         nominal = pre_nominal.replace(",", ".")
         tolerance = left_text_out.split(" ", 1)[1]
-        #print("Nominal is: " + nominal)
-        #print("Tolerance is: " + tolerance)
+        tolerance = tolerance.replace(",", ".")
+        print("Nominal is: " + nominal)
+        print("Tolerance is: " + tolerance)
         if tolerance.isupper():
             upper_tolerance = isotol('hole', float(nominal), str(tolerance), 'upper') * 0.001 #returns upper tolerance in mm
             lower_tolerance = isotol('hole', float(nominal), str(tolerance), 'lower') * 0.001 #returns upper tolerance in mm
-            #print("Upper tolerance is: " + str(upper_tolerance))
-            #print("Lower tolerance is: " + str(lower_tolerance))
-            tolerance_spread = abs(upper_tolerance - lower_tolerance)
-            #print("Tolerance spread is: " + str(tolerance_spread))
+            print("Upper tolerance is: " + str(upper_tolerance))
+            print("Lower tolerance is: " + str(lower_tolerance))
             return float(nominal) + float(lower_tolerance), float(nominal) + float(upper_tolerance)
         elif tolerance.islower():
             upper_tolerance = isotol('shaft', float(nominal), str(tolerance),'upper') * 0.001  # returns upper tolerance in mm
             lower_tolerance = isotol('shaft', float(nominal), str(tolerance),'lower') * 0.001  # returns upper tolerance in mm
-            #print("Upper tolerance is: " + str(upper_tolerance))
-            #print("Lower tolerance is: " + str(lower_tolerance))
-            tolerance_spread = abs(upper_tolerance - lower_tolerance)
-            #print("Tolerance spread is: " + str(tolerance_spread))
+            print("Upper tolerance is: " + str(upper_tolerance))
+            print("Lower tolerance is: " + str(lower_tolerance))
             return float(nominal) + float(lower_tolerance), float(nominal) + float(upper_tolerance)
         else:
-            return "TODO", "TODO"
-            #TODO code case for tolerances like: -0,1 +0,4 /// -0,2 -0,3 ///
-            #     -low priority-
+            if " " in tolerance:
+                tolerance = tolerance.replace("+", "")
+                tol1, tol2 = tolerance.split()
+                print("Tolerance 1 is: " + tol1)
+                print("Tolerance 2 is: " + tol2)
+                if float(tol1) > float(tol2):
+                    upper_tolerance = tol1
+                    lower_tolerance = tol2
+                else:
+                    upper_tolerance = tol2
+                    lower_tolerance = tol1
+                print("Upper tol is: " + upper_tolerance)
+                print("Lower tol is: " + lower_tolerance)
+                return float(nominal) + float(lower_tolerance), float(nominal) + float(upper_tolerance)
+            else:
+                if "-" in tolerance:
+                    return float(nominal) + float(tolerance), float(nominal)
+                else:
+                    return float(nominal), float(nominal) + float(tolerance)
 
     elif 'Length' in string:
-        type = 2
-        #print("Length found")
+        pass
+        print("Length found")
     elif 'Angle' in string:
-        type = 3
-        #print("Angle found")
+        pass
+        print("Angle found")
     else:
-        #print("UNDEFINED")
+        print("UNDEFINED / Interpreting as I.O")
         return "I.O"
-
-
 
 
 
 #TODO  lowers spread of provided tolerances to be more tight/realistic.
 def tolerance_modifier(lt, ut):
     tolerance_spread = round(abs(ut - lt), 3)
-    #print("Tolerance spread is: " + str(tolerance_spread))
     tight = round(random.uniform(0.2, 0.4), 3)
     tight_tolerance_spread = round(tolerance_spread * tight, 3)
-    #print("Tight tolerance spread is: " + str(tight_tolerance_spread))
     tight_ut = round(ut - tight_tolerance_spread, 3)
     tight_lt = round(lt + tight_tolerance_spread, 3)
-    #print(tight_lt, tight_ut)
     return tight_lt, tight_ut
 
 
-#TODO  Enters results into cells
+
+
 def result_inputer():
     for i in range(POS_Cell_First_Characteristic[0], POS_Cell_Last_Characteristic[0] + 1):
-        try:
-            tol_range = (tolerance_decoder(sh.cell(i, POS_Cell_First_Characteristic[1]).value))
-            if tol_range == "I.O":
-                result = "I.O"
-                sh.cell(i, POS_Cell_Part[1], value=str(result))
-                sh.cell(i, POS_Cell_Part[1]).font = Font(name= "Arial", size=7, color = "000000")
+        for j in range(1, len(POS_Cell_Part), 2):
+            try:
+                tol_range = (tolerance_decoder(sh.cell(i, POS_Cell_First_Characteristic[1]).value))
+                if tol_range == "I.O":
+                    result = "I.O"
+                    sh.cell(i, POS_Cell_Part[j], value=str(result))
+                    sh.cell(i, POS_Cell_Part[j]).font = Font(name= "Arial", size=7, color = "000000")
+                    print(result)
+                    continue
+
+                tol1 = float(tol_range[0])
+                tol2 = float(tol_range[1])
+                result = round(random.uniform(tol1, tol2), 3)
+                sh.cell(i, POS_Cell_Part[j], value=str(result))
+                sh.cell(i, POS_Cell_Part[j]).font = Font(name= "Arial", size=7, color="000000")
                 print(result)
-                continue
-            tol1 = float(tol_range[0])
-            tol2 = float(tol_range[1])
-            result = round(random.uniform(tol1, tol2), 3)
-            sh.cell(i, POS_Cell_Part[1], value=str(result))
-            sh.cell(i, POS_Cell_Part[1]).font = Font(name= "Arial", size=7, color="000000")
-            print(result)
-        except:
-            print("ERROR")
+
+            except:
+                print("ERROR")
 
 
 
 result_inputer()
 
-#testing purposes
-#print(tolerance_decoder(sh["n17"].value))
-#print(tolerance_modifier(9.5, 9.522))
 
-
-
-sleep(0.5)
 wb.save('test.xlsx')
-sleep(0.5)
 subprocess.Popen(["test.xlsx"],shell=True)
