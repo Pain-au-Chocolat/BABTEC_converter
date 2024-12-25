@@ -3,8 +3,10 @@ from openpyxl.styles import Font
 import subprocess
 from isofits import *
 import random
+import re
 
-wb = load_workbook("portrait.xlsx", data_only=True)
+
+wb = load_workbook("portrait_adv.xlsx", data_only=True)
 sh = wb["Sheet"]
 
 #ZEROPOINT = sh.cell(1, 1)
@@ -49,15 +51,20 @@ print("Last Characteristic is at position " + str(POS_Cell_Last_Characteristic))
 #Example output : (19.9, 20.1) or (I.O)
 #Example output : (LT, UT) or (text)
 def tolerance_decoder(string):
-    #0: Undefined (I.O)
-    #1: Diameter (7.5 , 8.5)
-    #2: Length (7.5 , 8.5)
-    #3: Angle (44.0 , 46.0)
-    #4: Radius (7.5 , 8.5)
-    #5: Chamfer (0.9 , 1.1)
+    #0: Undefined (I.O) Implemented
+    #1: Diameter (7.5 , 8.5) Implemented
+    #2: Length (7.5 , 8.5) Implemented
+    #3: Radius (7.5 , 8.5) Implemented
+    #4: Angle (44.0 , 46.0) Implemented
+    #5: Chamfer (0.9 , 1.1) Implemented
     #6: Roughness (5.0 , 10.0)
     print("---------------------------------------------------")
     print("Focus on: " + string)
+
+    if 'µm' in string:
+        print("Elox layer found")
+        print("Leaving cell empty for real measurement")
+        return "ELOX"
 
     if 'Diameter' in string:
         print("Diameter found")
@@ -81,6 +88,12 @@ def tolerance_decoder(string):
             print("Upper tolerance is: " + str(upper_tolerance))
             print("Lower tolerance is: " + str(lower_tolerance))
             return float(nominal) + float(lower_tolerance), float(nominal) + float(upper_tolerance)
+        elif "±" in tolerance:
+            tolerance = tolerance.replace("±", "")
+            print("Upper tolerance is: " + str(float(nominal) + float(tolerance)))
+            print("Lower tolerance is: " + str(float(nominal) - float(tolerance)))
+            return float(nominal) - float(tolerance), float(nominal) + float(tolerance)
+
         else:
             if " " in tolerance:
                 tolerance = tolerance.replace("+", "")
@@ -103,11 +116,214 @@ def tolerance_decoder(string):
                     return float(nominal), float(nominal) + float(tolerance)
 
     elif 'Length' in string:
-        pass
         print("Length found")
+        # ^[^\d]*: This regex pattern matches everything from the start of the string (^), up to the first digit (\d).
+        # The [^0-9] part matches any character that is not a digit, and the * means "zero or more" of these non-digit characters.
+        # re.sub(r'^[^\d]*', '', s) replaces the matched part (everything before the first digit) with an empty string, effectively removing it.
+        left_text_out = re.sub(r'^[^\d]*', '', string)
+        print("Nominal and tolerance is: " + left_text_out)
+        pre_nominal = left_text_out.split(" ", 1)[0]
+        nominal = pre_nominal.replace(",", ".")
+        print("Nominal is: " + nominal)
+        tolerance = left_text_out.split(" ", 1)[1]
+        tolerance = tolerance.replace(",", ".")
+        print("Tolerance is: " + tolerance)
+
+        if "±" in tolerance:
+            tolerance = tolerance.replace("±", "")
+            print("Upper tolerance is: " + str(float(nominal) + float(tolerance)))
+            print("Lower tolerance is: " + str(float(nominal) - float(tolerance)))
+            return float(nominal) - float(tolerance), float(nominal) + float(tolerance)
+
+        elif " " in tolerance:
+            tolerance = tolerance.replace("+", "")
+            tol1, tol2 = tolerance.split()
+            if float(tol1) > float(tol2):
+                upper_tolerance = tol1
+                lower_tolerance = tol2
+            else:
+                upper_tolerance = tol2
+                lower_tolerance = tol1
+            print("Upper tol is: " + upper_tolerance)
+            print("Lower tol is: " + lower_tolerance)
+            return float(nominal) + float(lower_tolerance), float(nominal) + float(upper_tolerance)
+        else:
+            if "-" in tolerance:
+                print("Upper tol is: " + str(float(nominal)))
+                print("Lower tol is: " + str((float(nominal) + float(tolerance))))
+                return float(nominal) + float(tolerance), float(nominal)
+            else:
+                print("Upper tol is: " + str((float(nominal) + float(tolerance))))
+                print("Lower tol is: " + str(float(nominal)))
+                return float(nominal), float(nominal) + float(tolerance)
+
+    elif 'Radius' in string:
+        print("Radius found")
+
+        if "max" in string:
+            left_text_out = re.sub(r'^[^\d]*', '', string)
+            upper_tolerance = left_text_out.replace(",", ".")
+            lower_tolerance = float(upper_tolerance) * 0.9
+            print("Upper tolerance is: " + str(upper_tolerance))
+            print("Lower tolerance is: " + str(lower_tolerance))
+            return float(lower_tolerance), float(upper_tolerance)
+        if "min" in string:
+            left_text_out = re.sub(r'^[^\d]*', '', string)
+            lower_tolerance = left_text_out.replace(",", ".")
+            upper_tolerance = float(lower_tolerance) * 1.1
+            print("Upper tolerance is: " + str(upper_tolerance))
+            print("Lower tolerance is: " + str(lower_tolerance))
+            return float(lower_tolerance), float(upper_tolerance)
+
+        # ^[^\d]*: This regex pattern matches everything from the start of the string (^), up to the first digit (\d).
+        # The [^0-9] part matches any character that is not a digit, and the * means "zero or more" of these non-digit characters.
+        # re.sub(r'^[^\d]*', '', s) replaces the matched part (everything before the first digit) with an empty string, effectively removing it.
+        left_text_out = re.sub(r'^[^\d]*', '', string)
+        print("Nominal and tolerance is: " + left_text_out)
+        pre_nominal = left_text_out.split(" ", 1)[0]
+        nominal = pre_nominal.replace(",", ".")
+        print("Nominal is: " + nominal)
+        tolerance = left_text_out.split(" ", 1)[1]
+        tolerance = tolerance.replace(",", ".")
+        print("Tolerance is: " + tolerance)
+
+        if "±" in tolerance:
+            tolerance = tolerance.replace("±", "")
+            print("Upper tolerance is: " + str(float(nominal) + float(tolerance)))
+            print("Lower tolerance is: " + str(float(nominal) - float(tolerance)))
+            return float(nominal) - float(tolerance), float(nominal) + float(tolerance)
+
+        elif " " in tolerance:
+            tolerance = tolerance.replace("+", "")
+            tol1, tol2 = tolerance.split()
+            if float(tol1) > float(tol2):
+                upper_tolerance = tol1
+                lower_tolerance = tol2
+            else:
+                upper_tolerance = tol2
+                lower_tolerance = tol1
+            print("Upper tol is: " + upper_tolerance)
+            print("Lower tol is: " + lower_tolerance)
+            return float(nominal) + float(lower_tolerance), float(nominal) + float(upper_tolerance)
+        else:
+            if "-" in tolerance:
+                print("Upper tol is: " + str(float(nominal)))
+                print("Lower tol is: " + str((float(nominal) + float(tolerance))))
+                return float(nominal) + float(tolerance), float(nominal)
+            else:
+                print("Upper tol is: " + str((float(nominal) + float(tolerance))))
+                print("Lower tol is: " + str(float(nominal)))
+                return float(nominal), float(nominal) + float(tolerance)
+
+
     elif 'Angle' in string:
-        pass
         print("Angle found")
+        # ^[^\d]*: This regex pattern matches everything from the start of the string (^), up to the first digit (\d).
+        # The [^0-9] part matches any character that is not a digit, and the * means "zero or more" of these non-digit characters.
+        # re.sub(r'^[^\d]*', '', s) replaces the matched part (everything before the first digit) with an empty string, effectively removing it.
+        left_text_out = re.sub(r'^[^\d]*', '', string)
+        print("Nominal and tolerance is: " + left_text_out)
+        left_text_out = left_text_out.replace("°", "")
+        pre_nominal = left_text_out.split(" ", 1)[0]
+        nominal = pre_nominal.replace(",", ".")
+        print("Nominal is: " + nominal)
+        tolerance = left_text_out.split(" ", 1)[1]
+        tolerance = tolerance.replace(",", ".")
+        print("Tolerance is: " + tolerance)
+
+        if "±" in tolerance:
+            tolerance = tolerance.replace("±", "")
+            print("Upper tolerance is: " + str(float(nominal) + float(tolerance)))
+            print("Lower tolerance is: " + str(float(nominal) - float(tolerance)))
+            return float(nominal) - float(tolerance), float(nominal) + float(tolerance)
+
+        elif " " in tolerance:
+            tolerance = tolerance.replace("+", "")
+            tol1, tol2 = tolerance.split()
+            if float(tol1) > float(tol2):
+                upper_tolerance = tol1
+                lower_tolerance = tol2
+            else:
+                upper_tolerance = tol2
+                lower_tolerance = tol1
+            print("Upper tol is: " + upper_tolerance)
+            print("Lower tol is: " + lower_tolerance)
+            return float(nominal) + float(lower_tolerance), float(nominal) + float(upper_tolerance)
+        else:
+            if "-" in tolerance:
+                print("Upper tol is: " + str(float(nominal)))
+                print("Lower tol is: " + str((float(nominal) + float(tolerance))))
+                return float(nominal) + float(tolerance), float(nominal)
+            else:
+                print("Upper tol is: " + str((float(nominal) + float(tolerance))))
+                print("Lower tol is: " + str(float(nominal)))
+                return float(nominal), float(nominal) + float(tolerance)
+
+    elif 'Chamfer' in string:
+        print("Chamfer found")
+
+        if "max" in string:
+            left_text_out = re.sub(r'^[^\d]*', '', string)
+            upper_tolerance = left_text_out.replace(",", ".")
+            lower_tolerance = float(upper_tolerance) * 0.9
+            print("Upper tolerance is: " + str(upper_tolerance))
+            print("Lower tolerance is: " + str(lower_tolerance))
+            return float(lower_tolerance), float(upper_tolerance)
+        if "min" in string:
+            left_text_out = re.sub(r'^[^\d]*', '', string)
+            lower_tolerance = left_text_out.replace(",", ".")
+            upper_tolerance = float(lower_tolerance) * 1.1
+            print("Upper tolerance is: " + str(upper_tolerance))
+            print("Lower tolerance is: " + str(lower_tolerance))
+            return float(lower_tolerance), float(upper_tolerance)
+
+
+
+        left_text_out = re.sub(r'^[^\d]*', '', string)
+        print("Nominal and tolerance is: " + left_text_out)
+        if " " not in left_text_out:
+            left_text_out = left_text_out.replace(",", ".")
+            upper_tolerance = float(left_text_out) * 1.1
+            lower_tolerance = float(left_text_out) * 0.9
+            print("Upper tolerance is: " + str(upper_tolerance))
+            print("Lower tolerance is: " + str(lower_tolerance))
+            return float(lower_tolerance), float(upper_tolerance)
+
+        pre_nominal = left_text_out.split(" ", 1)[0]
+        nominal = pre_nominal.replace(",", ".")
+        print("Nominal is: " + nominal)
+        tolerance = left_text_out.split(" ", 1)[1]
+        tolerance = tolerance.replace(",", ".")
+        print("Tolerance is: " + tolerance)
+
+        if "±" in tolerance:
+            tolerance = tolerance.replace("±", "")
+            print("Upper tolerance is: " + str(float(nominal) + float(tolerance)))
+            print("Lower tolerance is: " + str(float(nominal) - float(tolerance)))
+            return float(nominal) - float(tolerance), float(nominal) + float(tolerance)
+
+        elif " " in tolerance:
+            tolerance = tolerance.replace("+", "")
+            tol1, tol2 = tolerance.split()
+            if float(tol1) > float(tol2):
+                upper_tolerance = tol1
+                lower_tolerance = tol2
+            else:
+                upper_tolerance = tol2
+                lower_tolerance = tol1
+            print("Upper tol is: " + upper_tolerance)
+            print("Lower tol is: " + lower_tolerance)
+            return float(nominal) + float(lower_tolerance), float(nominal) + float(upper_tolerance)
+        else:
+            if "-" in tolerance:
+                print("Upper tol is: " + str(float(nominal)))
+                print("Lower tol is: " + str((float(nominal) + float(tolerance))))
+                return float(nominal) + float(tolerance), float(nominal)
+            else:
+                print("Upper tol is: " + str((float(nominal) + float(tolerance))))
+                print("Lower tol is: " + str(float(nominal)))
+                return float(nominal), float(nominal) + float(tolerance)
+
     else:
         print("UNDEFINED / Interpreting as I.O")
         return "I.O"
@@ -138,6 +354,12 @@ def result_inputer():
                     print(result)
                     continue
 
+                if tol_range == "ELOX":
+                    sh.cell(i, POS_Cell_Part[j], value="")
+                    sh.cell(i, POS_Cell_Part[j]).font = Font(name= "Arial", size=7, color = "000000")
+                    continue
+
+
                 tol1 = float(tol_range[0])
                 tol2 = float(tol_range[1])
                 result = round(random.uniform(tol1, tol2), 3)
@@ -153,5 +375,13 @@ def result_inputer():
 result_inputer()
 
 
+
 wb.save('test.xlsx')
+
 subprocess.Popen(["test.xlsx"],shell=True)
+
+
+print("---------------------------------------------------")
+print("Script successfully finished.")
+print("Made by Speed3DBall")
+input()
