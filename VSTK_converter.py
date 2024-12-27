@@ -5,6 +5,9 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 from isofits import *
+from License_file import License
+
+License()
 
 Number_of_Files = 0
 Number_of_Characteristics = 0
@@ -40,6 +43,8 @@ for filename in os.listdir(dir_path):
             Number_of_Files = Number_of_Files - 1
             continue
 
+        for i in range(3):
+            print("---------------------------------------------------")
         print("File: " + file_path)
         print("No. is at position " + str(POS_Cell_No))
 
