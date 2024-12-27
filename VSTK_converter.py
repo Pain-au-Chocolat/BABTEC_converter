@@ -1,54 +1,50 @@
 import os
+import re
+import random
 from openpyxl import load_workbook
 from openpyxl.styles import Font
-from isofits import *
-import random
-import re
 from openpyxl.utils import get_column_letter
+from isofits import *
 
 Number_of_Files = 0
 Number_of_Characteristics = 0
 Number_of_Errors = 0
 
-
+#get windows path for this exact file
 dir_path = os.getcwd()
 
-#dir_path = os.path.dirname(os.path.abspath(__file__))
-
-
-
+#iterate over all Excel files in this path
 for filename in os.listdir(dir_path):
     if filename.endswith('.xlsx'):  # Check for Excel files
         file_path = os.path.join(dir_path, filename)  # Create full file path
         workbook = load_workbook(file_path)  # Load the workbook
         sh = workbook["Sheet"]
         Number_of_Files = Number_of_Files + 1
-        #wb = load_workbook("portrait.xlsx", data_only=True)
-        #sh = workbook["Sheet"]
 
-        #ZEROPOINT = sh.cell(1, 1)
-        #print(sh["n31"].value)
-        #print(sh.cell(17, 2).value)
-
+        #get Excel naming for rows and columns. (from 2,5 to B5)
         def xlref(row, column):
             return get_column_letter(column) + str(row)
 
+        #get Position of cell with text "No."
         def cell_no():
             for i in range(1, 1000):
                 if sh.cell(i, 1).value == "No.":
                     return [i, 1]
         POS_Cell_No = cell_no()
+
+        # If cell with "No." wasn't found, skip this file
         if not any(char.isdigit() for char in str(POS_Cell_No)):
             print("---------------------------------------------------")
             print("File in this directory:\n" + file_path + "\nIs not supported or created in BABTEC format.")
+            print("---------------------------------------------------")
             Number_of_Files = Number_of_Files - 1
             continue
 
+        print("File: " + file_path)
         print("No. is at position " + str(POS_Cell_No))
 
 
-
-
+        # get Position of cell with text "Part#"
         def cell_part():
             cell_no_list = []
             for i in range(1, 1000):
@@ -59,6 +55,8 @@ for filename in os.listdir(dir_path):
         POS_Cell_Part = cell_part()
         print("Part# is at position " + str(POS_Cell_Part))
 
+
+        # get Position of cell with first characteristic
         def cell_first_characteristic():
             for i in range(1,1000):
                 finder = str(sh.cell(POS_Cell_No[0]+1, i).value)
@@ -67,6 +65,8 @@ for filename in os.listdir(dir_path):
         POS_Cell_First_Characteristic = cell_first_characteristic()
         print("First Characteristic is at position " + str(POS_Cell_First_Characteristic))
 
+
+        # get Position of cell with last characteristic
         def cell_last_characteristic():
             for i in range(1, 1000):
                 finder = str(sh.cell(POS_Cell_First_Characteristic[0] + i, 1).value)
@@ -205,9 +205,6 @@ for filename in os.listdir(dir_path):
                     print("Lower tolerance is: " + str(lower_tolerance))
                     return float(lower_tolerance), float(upper_tolerance)
 
-                # ^[^\d]*: This regex pattern matches everything from the start of the string (^), up to the first digit (\d).
-                # The [^0-9] part matches any character that is not a digit, and the * means "zero or more" of these non-digit characters.
-                # re.sub(r'^[^\d]*', '', s) replaces the matched part (everything before the first digit) with an empty string, effectively removing it.
                 left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
                 pre_nominal = left_text_out.split(" ", 1)[0]
@@ -245,12 +242,8 @@ for filename in os.listdir(dir_path):
                         print("Lower tolerance is: " + str(float(nominal)))
                         return float(nominal), float(nominal) + float(tolerance)
 
-
             if 'Angle' in string:
                 print("Angle found")
-                # ^[^\d]*: This regex pattern matches everything from the start of the string (^), up to the first digit (\d).
-                # The [^0-9] part matches any character that is not a digit, and the * means "zero or more" of these non-digit characters.
-                # re.sub(r'^[^\d]*', '', s) replaces the matched part (everything before the first digit) with an empty string, effectively removing it.
                 left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
                 left_text_out = left_text_out.replace("°", "")
@@ -307,8 +300,6 @@ for filename in os.listdir(dir_path):
                     print("Lower tolerance is: " + str(lower_tolerance))
                     return float(lower_tolerance), float(upper_tolerance)
 
-
-
                 left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
                 if " " not in left_text_out:
@@ -358,8 +349,6 @@ for filename in os.listdir(dir_path):
                 print("UNDEFINED / Interpreting as I.O")
                 return "I.O"
 
-
-
         # Lowers spread of provided tolerances to be more tight/realistic.
         # This feature won't be implemented if not needed.
         #def tolerance_modifier(lt, ut):
@@ -369,9 +358,6 @@ for filename in os.listdir(dir_path):
         #    tight_ut = round(ut - tight_tolerance_spread, 3)
         #    tight_lt = round(lt + tight_tolerance_spread, 3)
         #    return tight_lt, tight_ut
-
-
-
 
         def result_inputer():
             for i in range(POS_Cell_First_Characteristic[0], POS_Cell_Last_Characteristic[0] + 1):
@@ -408,10 +394,7 @@ for filename in os.listdir(dir_path):
                         Number_of_Errors = Number_of_Errors + 1
                         print("ERROR")
 
-
-
         result_inputer()
-
 
         workbook.save(file_path)
         workbook.close()
@@ -435,5 +418,6 @@ if Number_of_Errors == 1:
 else:
     print(str(Number_of_Errors) + " errors detected")
 
+print("---------------------------------------------------")
 print("*** Program created by unknown... ;) ***")
 input()
