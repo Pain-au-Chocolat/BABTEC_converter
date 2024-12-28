@@ -43,7 +43,6 @@ def randomize_unused_digits():
             file2.write(randomized_string)
             file2.close()
 
-
 def License():
 
     # Create the text file if it doesn't exist
@@ -64,7 +63,6 @@ def License():
         input()
         exit()
 
-
     # protection against changing time back on PC
     current_license_unix = license_key_string[25:35]
     if int(current_license_unix) > int(Unix):
@@ -78,7 +76,6 @@ def License():
     # changing old unix time to actual in license string
     license_key_string = license_key_string[:25] + str(Unix) + license_key_string[35:]
     update_license_file(license_key_string)
-
 
     current_license_expiry = license_key_string[5:15]
     if int(current_license_expiry) < int(Unix):
