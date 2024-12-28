@@ -29,6 +29,21 @@ def update_license_file(string):
         file.write(updated_license)
         file.close()
 
+def randomize_unused_digits():
+    with open(filepath, 'r') as file:
+        license_key_string = file.read()
+        first_random = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 5)]))
+        second_random = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 10)]))
+        third_random = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 29)]))
+        current_license_unix = license_key_string[25:35]
+        current_license_expiry = license_key_string[5:15]
+        randomized_string = str(first_random) + str(current_license_expiry) + str(second_random) + str(current_license_unix) + str(third_random)
+        file.close()
+        with open(filepath, 'w') as file2:
+            file2.write(randomized_string)
+            file2.close()
+
+
 def License():
 
     # Create the text file if it doesn't exist
@@ -38,16 +53,26 @@ def License():
     with open(filepath, 'r') as file:
         license_key_string = file.read()
 
-    if not len(license_key_string) == 64:
+    if not len(license_key_string) == 64 or not license_key_string.isdigit():
         with open(filepath, 'w') as file:
             pass
+        print("License file is corrupted or verification failed.")
+        print("Resetting License file.")
+        os.remove(filepath)
+        time.sleep(0.2)
         create_license_file()
-        current_license_expiry = str(input_License())
+        input()
+        exit()
+
 
     # protection against changing time back on PC
     current_license_unix = license_key_string[25:35]
     if int(current_license_unix) > int(Unix):
         print("License computer timestamp tampering detected!")
+        print("Resetting License file.")
+        os.remove(filepath)
+        create_license_file()
+        input()
         exit()
 
     # changing old unix time to actual in license string
@@ -58,8 +83,10 @@ def License():
     current_license_expiry = license_key_string[5:15]
     if int(current_license_expiry) < int(Unix):
         print("Invalid License key.")
+        create_license_file()
         current_license_expiry = int(input_License())
         if current_license_expiry < int(Unix):
+            create_license_file()
             print("Invalid License key")
             input()
             exit()
@@ -97,4 +124,13 @@ def input_License():
     return expiry_date
 
 if __name__ == "__main__":
-    License()
+    try:
+        License()
+    except:
+        print("License file is corrupted or verification failed.")
+        print("Resetting License file.")
+        os.remove(filepath)
+        time.sleep(0.2)
+        create_license_file()
+        input()
+        exit()
