@@ -7,6 +7,7 @@ from openpyxl.utils import get_column_letter
 from isofits import *
 from License_file import License
 
+#Checks if user has valid license key
 License()
 
 Number_of_Files = 0
@@ -48,7 +49,6 @@ for filename in os.listdir(dir_path):
         print("File: " + file_path)
         print("No. is at position " + str(POS_Cell_No))
 
-
         # get Position of cell with text "Part#"
         def cell_part():
             cell_no_list = []
@@ -69,7 +69,6 @@ for filename in os.listdir(dir_path):
                     return [POS_Cell_No[0]+1, i]
         POS_Cell_First_Characteristic = cell_first_characteristic()
         print("First Characteristic is at position " + str(POS_Cell_First_Characteristic))
-
 
         # get Position of cell with last characteristic
         def cell_last_characteristic():
@@ -199,15 +198,15 @@ for filename in os.listdir(dir_path):
                     left_text_out = re.sub(r'^[^\d]*', '', string)
                     upper_tolerance = left_text_out.replace(",", ".")
                     lower_tolerance = float(upper_tolerance) * 0.9
-                    print("Upper tolerance is: " + str(upper_tolerance))
-                    print("Lower tolerance is: " + str(lower_tolerance))
+                    print("Upper tolerance is: " + str(round(float(upper_tolerance), 3)))
+                    print("Lower tolerance is: " + str(round(float(lower_tolerance), 3)))
                     return float(lower_tolerance), float(upper_tolerance)
                 if "min" in string:
                     left_text_out = re.sub(r'^[^\d]*', '', string)
                     lower_tolerance = left_text_out.replace(",", ".")
                     upper_tolerance = float(lower_tolerance) * 1.1
-                    print("Upper tolerance is: " + str(upper_tolerance))
-                    print("Lower tolerance is: " + str(lower_tolerance))
+                    print("Upper tolerance is: " + str(round(float(upper_tolerance), 3)))
+                    print("Lower tolerance is: " + str(round(float(lower_tolerance), 3)))
                     return float(lower_tolerance), float(upper_tolerance)
 
                 left_text_out = re.sub(r'^[^\d]*', '', string)
@@ -294,15 +293,15 @@ for filename in os.listdir(dir_path):
                     left_text_out = re.sub(r'^[^\d]*', '', string)
                     upper_tolerance = left_text_out.replace(",", ".")
                     lower_tolerance = float(upper_tolerance) * 0.9
-                    print("Upper tolerance is: " + str(upper_tolerance))
-                    print("Lower tolerance is: " + str(lower_tolerance))
+                    print("Upper tolerance is: " + str(round(float(upper_tolerance), 3)))
+                    print("Lower tolerance is: " + str(round(float(lower_tolerance), 3)))
                     return float(lower_tolerance), float(upper_tolerance)
                 if "min" in string:
                     left_text_out = re.sub(r'^[^\d]*', '', string)
                     lower_tolerance = left_text_out.replace(",", ".")
                     upper_tolerance = float(lower_tolerance) * 1.1
-                    print("Upper tolerance is: " + str(upper_tolerance))
-                    print("Lower tolerance is: " + str(lower_tolerance))
+                    print("Upper tolerance is: " + str(round(float(upper_tolerance), 3)))
+                    print("Lower tolerance is: " + str(round(float(lower_tolerance), 3)))
                     return float(lower_tolerance), float(upper_tolerance)
 
                 left_text_out = re.sub(r'^[^\d]*', '', string)
@@ -385,7 +384,6 @@ for filename in os.listdir(dir_path):
                             sh.cell(i, POS_Cell_Part[j], value="")
                             sh.cell(i, POS_Cell_Part[j]).font = Font(name= "Arial", size=7, color = "000000")
                             continue
-
 
                         tol1 = float(tol_range[0])
                         tol2 = float(tol_range[1])
