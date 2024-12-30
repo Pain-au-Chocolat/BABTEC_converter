@@ -11,13 +11,13 @@ filepath = os.path.join(dir_path, 'License.txt')
 def create_license_file():
     with open(filepath, 'w') as file:
         # Initial state of License key
-        random_initial_state = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 64)]))
+        random_initial_state = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 512)]))
 
         # this is date of license expiration, when creating new license, it's set on May 2024
-        random_initial_state = random_initial_state[:5] + "1714985405" + random_initial_state[15:]
+        random_initial_state = random_initial_state[:225] + "1714985405" + random_initial_state[235:]
 
         # this is timestamp of last use of script, when creating new license, date is circa 2010.
-        random_initial_state = random_initial_state[:25] + "1279069322" + random_initial_state[35:]
+        random_initial_state = random_initial_state[:385] + "1279069322" + random_initial_state[395:]
 
         file.write(random_initial_state)
         file.close()
@@ -32,11 +32,11 @@ def update_license_file(string):
 def randomize_unused_digits():
     with open(filepath, 'r') as file:
         license_key_string = file.read()
-        first_random = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 5)]))
-        second_random = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 10)]))
-        third_random = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 29)]))
-        current_license_unix = license_key_string[25:35]
-        current_license_expiry = license_key_string[5:15]
+        first_random = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 225)]))
+        second_random = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 150)]))
+        third_random = str(''.join(["{}".format(randint(0, 9)) for num in range(0, 117)]))
+        current_license_unix = license_key_string[385:395]
+        current_license_expiry = license_key_string[225:235]
         randomized_string = str(first_random) + str(current_license_expiry) + str(second_random) + str(current_license_unix) + str(third_random)
         file.close()
         with open(filepath, 'w') as file2:
@@ -52,7 +52,7 @@ def License():
     with open(filepath, 'r') as file:
         license_key_string = file.read()
 
-    if not len(license_key_string) == 64 or not license_key_string.isdigit():
+    if not len(license_key_string) == 512 or not license_key_string.isdigit():
         with open(filepath, 'w') as file:
             pass
         print("License file is corrupted or verification failed.")
@@ -64,7 +64,7 @@ def License():
         exit()
 
     # protection against changing time back on PC
-    current_license_unix = license_key_string[25:35]
+    current_license_unix = license_key_string[385:395]
     if int(current_license_unix) > int(Unix):
         print("License computer timestamp tampering detected!")
         print("Resetting License file.")
@@ -74,10 +74,10 @@ def License():
         exit()
 
     # changing old unix time to actual in license string
-    license_key_string = license_key_string[:25] + str(Unix) + license_key_string[35:]
+    license_key_string = license_key_string[:385] + str(Unix) + license_key_string[395:]
     update_license_file(license_key_string)
 
-    current_license_expiry = license_key_string[5:15]
+    current_license_expiry = license_key_string[225:235]
     if int(current_license_expiry) < int(Unix):
         print("Invalid License key.")
         create_license_file()
@@ -88,7 +88,7 @@ def License():
             input()
             exit()
         elif int(current_license_expiry) > int(Unix):
-            license_key_string = license_key_string[:5] + str(current_license_expiry) + license_key_string[15:]
+            license_key_string = license_key_string[:225] + str(current_license_expiry) + license_key_string[235:]
             update_license_file(license_key_string)
 
     # Convert Unix timestamp to datetime object
@@ -105,11 +105,19 @@ def input_License():
 
     #License_keys = License key : Date of expiry
     License_keys = {
-    "zXmUjeWlMAR25" : 1740783600,
-    "zDEsUvjKJUN25" : 1748728800,
-    "lXyxms0aSEP25" : 1756677600,
-    "1RfMMy1FDEC25" : 1764543600,
-    "developer-key" : 2524604400,
+    "zDEsUvjkJAN25" : 1738364400,
+    "lXyxms0aFEB25" : 1740783600,
+    "1RfMMy1fMAR25" : 1743458400,
+    "vOAO6VQ5APR25" : 1746050400,
+    "dFrPP565MAY25" : 1748728800,
+    "v9NPQOubJUN25" : 1751320800,
+    "BOKIzrjaJUL25" : 1753999200,
+    "ZPbzHbZsAUG25" : 1756677600,
+    "mxT2rr64SEP25" : 1759269600,
+    "PpnCN4CqOCT25" : 1761951600,
+    "TP56FIXlNOV25" : 1764543600,
+    "e4xLz0amDEC25" : 1767222000,
+    "developer-key" : Unix + 600,
     }
     try:
         expiry_date = License_keys[user_license_input]
