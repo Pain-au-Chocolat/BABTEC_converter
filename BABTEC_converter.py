@@ -60,7 +60,6 @@ for filename in os.listdir(dir_path):
         POS_Cell_Part = cell_part()
         print("Part# is at position " + str(POS_Cell_Part))
 
-
         # get Position of cell with first characteristic
         def cell_first_characteristic():
             for i in range(1,1000):
