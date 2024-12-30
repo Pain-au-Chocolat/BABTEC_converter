@@ -8,6 +8,7 @@ from isofits import *
 from License_file import License
 
 #Checks if user has valid license key
+#This function is in private repo. (contains keys)
 License()
 
 Number_of_Files = 0
