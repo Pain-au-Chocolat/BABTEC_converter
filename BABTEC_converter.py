@@ -6,9 +6,9 @@ from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 from isofits import *
 from License_file import License
+from License_file import check_expiry
 
 #Checks if user has valid license key
-#This function is in private repo. (contains keys)
 License()
 
 Number_of_Files = 0
@@ -65,7 +65,7 @@ for filename in os.listdir(dir_path):
         def cell_first_characteristic():
             for i in range(1,1000):
                 finder = str(sh.cell(POS_Cell_No[0]+1, i).value)
-                if any(c.isalpha() for c in finder) and finder != "None":
+                if any(c.isalpha() for c in finder) and finder not in ["None", "KMS"]:
                     return [POS_Cell_No[0]+1, i]
         POS_Cell_First_Characteristic = cell_first_characteristic()
         print("First Characteristic is at position " + str(POS_Cell_First_Characteristic))
@@ -93,14 +93,60 @@ for filename in os.listdir(dir_path):
 
             print("Focus on: " + string)
 
+            """
             if 'µm' in string:
                 print("Elox layer found")
                 print("Leaving cell empty for real measurement")
                 return "ELOX"
+            """
+
+            if 'µm' in string:
+                print("Elox layer found")
+                left_text_out = re.sub(r'^[^\d]*', '', string)
+                print("Nominal and tolerance is: " + left_text_out)
+                pre_nominal = left_text_out.split(" ", 1)[0]
+                nominal = pre_nominal.replace(",", ".")
+                tolerance = left_text_out.split(" ", 1)[1]
+                tolerance = tolerance.replace(",", ".")
+                tolerance = tolerance.replace("µm", "")
+                print("Nominal is: " + nominal)
+                print("Tolerance is: " + tolerance)
+
+                if "±" in tolerance:
+                    tolerance = tolerance.replace("±", "")
+                    print("Upper tolerance is: " + str(float(nominal) + float(tolerance)))
+                    print("Lower tolerance is: " + str(float(nominal) - float(tolerance)))
+                    return float(nominal) - float(tolerance), float(nominal) + float(tolerance)
+
+                else:
+                    if " " in tolerance:
+                        tolerance = tolerance.replace("+", "")
+                        tol1, tol2 = tolerance.split()
+                        if float(tol1) > float(tol2):
+                            upper_tolerance = tol1
+                            lower_tolerance = tol2
+                        else:
+                            upper_tolerance = tol2
+                            lower_tolerance = tol1
+                        print("Upper tolerance is: " + str(float(nominal) + float(upper_tolerance)))
+                        print("Lower tolerance is: " + str(float(nominal) + float(lower_tolerance)))
+                        return float(nominal) + float(lower_tolerance), float(nominal) + float(upper_tolerance)
+                    else:
+                        if "-" in tolerance:
+                            print("Upper tolerance is: " + str(float(nominal)))
+                            print("Lower tolerance is: " + str(float(nominal) + float(tolerance)))
+                            return float(nominal) + float(tolerance), float(nominal)
+                        else:
+                            print("Upper tolerance is: " + str(float(nominal) + float(tolerance)))
+                            print("Lower tolerance is: " + str(float(nominal)))
+                            return float(nominal), float(nominal) + float(tolerance)
 
             if 'Diameter' in string:
                 print("Diameter found")
-                left_text_out = string.split("⌀", 1)[-1]
+                # ^[^\d]*: This regex pattern matches everything from the start of the string (^), up to the first digit (\d).
+                # The [^0-9] part matches any character that is not a digit, and the * means "zero or more" of these non-digit characters.
+                # re.sub(r'^[^\d]*', '', s) replaces the matched part (everything before the first digit) with an empty string, effectively removing it.
+                left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
                 pre_nominal = left_text_out.split(" ", 1)[0]
                 nominal = pre_nominal.replace(",", ".")
@@ -151,9 +197,6 @@ for filename in os.listdir(dir_path):
 
             if 'Length' in string:
                 print("Length found")
-                # ^[^\d]*: This regex pattern matches everything from the start of the string (^), up to the first digit (\d).
-                # The [^0-9] part matches any character that is not a digit, and the * means "zero or more" of these non-digit characters.
-                # re.sub(r'^[^\d]*', '', s) replaces the matched part (everything before the first digit) with an empty string, effectively removing it.
                 left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
                 pre_nominal = left_text_out.split(" ", 1)[0]
@@ -349,6 +392,18 @@ for filename in os.listdir(dir_path):
                         print("Lower tolerance is: " + str(float(nominal)))
                         return float(nominal), float(nominal) + float(tolerance)
 
+            if 'Roughness' in string:
+                print("Roughness found")
+                left_text_out = re.sub(r'\D', '', string)
+                pre_tolerance = left_text_out.split(" ", 1)[0]
+                tolerance = pre_tolerance.replace(",", ".")
+                print("Tolerance is: " + tolerance)
+                lower_tolerance = float(tolerance) * 0.1
+                upper_tolerance = float(tolerance) * 0.6
+                print("Upper tolerance is: " + str(round(upper_tolerance, 3)))
+                print("Lower tolerance is: " + str(round(lower_tolerance, 3)))
+                return lower_tolerance, upper_tolerance
+
             else:
                 print("UNDEFINED / Interpreting as I.O")
                 return "I.O"
@@ -377,12 +432,7 @@ for filename in os.listdir(dir_path):
                             result = "I.O"
                             sh.cell(i, POS_Cell_Part[j], value=str(result))
                             sh.cell(i, POS_Cell_Part[j]).font = Font(name= "Arial", size=7, color = "000000")
-                            print(result)
-                            continue
-
-                        if tol_range == "ELOX":
-                            sh.cell(i, POS_Cell_Part[j], value="")
-                            sh.cell(i, POS_Cell_Part[j]).font = Font(name= "Arial", size=7, color = "000000")
+                            print(">>> " + result + " <<<")
                             continue
 
                         tol1 = float(tol_range[0])
@@ -390,7 +440,7 @@ for filename in os.listdir(dir_path):
                         result = round(random.uniform(tol1, tol2), 3)
                         sh.cell(i, POS_Cell_Part[j], value=str(result))
                         sh.cell(i, POS_Cell_Part[j]).font = Font(name= "Arial", size=7, color="000000")
-                        print(result)
+                        print(">>> " + str(result) + " <<<")
 
                     except:
                         global  Number_of_Errors
@@ -421,6 +471,8 @@ if Number_of_Errors == 1:
 else:
     print(str(Number_of_Errors) + " errors detected")
 
+print("---------------------------------------------------")
+check_expiry()
 print("---------------------------------------------------")
 print("*** Program created by unknown... ;) ***")
 input()
