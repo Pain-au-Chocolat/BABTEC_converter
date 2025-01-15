@@ -93,13 +93,6 @@ for filename in os.listdir(dir_path):
 
             print("Focus on: " + string)
 
-            """
-            if 'µm' in string:
-                print("Elox layer found")
-                print("Leaving cell empty for real measurement")
-                return "ELOX"
-            """
-
             if 'µm' in string:
                 print("Elox layer found")
                 left_text_out = re.sub(r'^[^\d]*', '', string)
@@ -148,6 +141,8 @@ for filename in os.listdir(dir_path):
                 # re.sub(r'^[^\d]*', '', s) replaces the matched part (everything before the first digit) with an empty string, effectively removing it.
                 left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
+                left_text_out = left_text_out.replace("+ ", "+")
+                left_text_out = left_text_out.replace("- ", "-")
                 pre_nominal = left_text_out.split(" ", 1)[0]
                 nominal = pre_nominal.replace(",", ".")
                 tolerance = left_text_out.split(" ", 1)[1]
@@ -199,6 +194,8 @@ for filename in os.listdir(dir_path):
                 print("Length found")
                 left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
+                left_text_out = left_text_out.replace("+ ", "+")
+                left_text_out = left_text_out.replace("- ", "-")
                 pre_nominal = left_text_out.split(" ", 1)[0]
                 nominal = pre_nominal.replace(",", ".")
                 print("Nominal is: " + nominal)
@@ -254,6 +251,8 @@ for filename in os.listdir(dir_path):
 
                 left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
+                left_text_out = left_text_out.replace("+ ", "+")
+                left_text_out = left_text_out.replace("- ", "-")
                 pre_nominal = left_text_out.split(" ", 1)[0]
                 nominal = pre_nominal.replace(",", ".")
                 print("Nominal is: " + nominal)
@@ -293,10 +292,20 @@ for filename in os.listdir(dir_path):
                 print("Angle found")
                 left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
+                left_text_out = left_text_out.replace("+ ", "+")
+                left_text_out = left_text_out.replace("- ", "-")
                 left_text_out = left_text_out.replace("°", "")
                 pre_nominal = left_text_out.split(" ", 1)[0]
                 nominal = pre_nominal.replace(",", ".")
                 print("Nominal is: " + nominal)
+                if "x" in nominal:
+                    nominal = nominal.split('x')[1]
+                    lower_tolerance = float(nominal) * 0.85
+                    upper_tolerance = float(nominal) * 1.15
+                    print("Upper tolerance is: " + str(round(upper_tolerance, 3)))
+                    print("Lower tolerance is: " + str(round(lower_tolerance, 3)))
+                    return lower_tolerance, upper_tolerance
+
                 tolerance = left_text_out.split(" ", 1)[1]
                 tolerance = tolerance.replace(",", ".")
                 print("Tolerance is: " + tolerance)
@@ -349,6 +358,8 @@ for filename in os.listdir(dir_path):
 
                 left_text_out = re.sub(r'^[^\d]*', '', string)
                 print("Nominal and tolerance is: " + left_text_out)
+                left_text_out = left_text_out.replace("+ ", "+")
+                left_text_out = left_text_out.replace("- ", "-")
                 if " " not in left_text_out:
                     left_text_out = left_text_out.replace(",", ".")
                     upper_tolerance = float(left_text_out) * 1.1
@@ -392,17 +403,34 @@ for filename in os.listdir(dir_path):
                         print("Lower tolerance is: " + str(float(nominal)))
                         return float(nominal), float(nominal) + float(tolerance)
 
-            if 'Roughness' in string:
+            if 'Roughness' in string or "roughness" in string:
                 print("Roughness found")
-                left_text_out = re.sub(r'\D', '', string)
-                pre_tolerance = left_text_out.split(" ", 1)[0]
-                tolerance = pre_tolerance.replace(",", ".")
+                string = string.replace(",", ".")
+                left_text_out = re.sub(r'[^\d.]', '', string)
+                tolerance = left_text_out.split(" ", 1)[0]
                 print("Tolerance is: " + tolerance)
                 lower_tolerance = float(tolerance) * 0.1
                 upper_tolerance = float(tolerance) * 0.6
                 print("Upper tolerance is: " + str(round(upper_tolerance, 3)))
                 print("Lower tolerance is: " + str(round(lower_tolerance, 3)))
                 return lower_tolerance, upper_tolerance
+
+            GDandT_Symbols = ['Profile', 'Flatness', 'Concentricity', 'Perpendicularity', 'Runout', 'Parallelism',
+                        'Circularity', 'Straightness', 'Cylindricity', 'Symmetry', 'Angularity', 'Position']
+            if any(keyword in string for keyword in GDandT_Symbols):
+                print("GD&T Symbol found")
+                string = string.replace(",", ".")
+                left_text_out = re.sub(r'[^0-9.]', '', string)
+                left_text_out = left_text_out.replace("+ ", "+")
+                left_text_out = left_text_out.replace("- ", "-")
+                tolerance = left_text_out.split(" ", 1)[0]
+                print("Tolerance is: " + tolerance)
+                lower_tolerance = float(tolerance) * 0.1
+                upper_tolerance = float(tolerance) * 0.6
+                print("Upper tolerance is: " + str(round(upper_tolerance, 3)))
+                print("Lower tolerance is: " + str(round(lower_tolerance, 3)))
+                return lower_tolerance, upper_tolerance
+
 
             else:
                 print("UNDEFINED / Interpreting as I.O")
@@ -443,6 +471,8 @@ for filename in os.listdir(dir_path):
                         print(">>> " + str(result) + " <<<")
 
                     except:
+                        sh.cell(i, POS_Cell_Part[j], value=str(""))
+                        sh.cell(i, POS_Cell_Part[j]).font = Font(name="Arial", size=7, color="000000")
                         global  Number_of_Errors
                         Number_of_Errors = Number_of_Errors + 1
                         print("ERROR")
