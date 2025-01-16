@@ -140,6 +140,9 @@ for filename in os.listdir(dir_path):
                 # The [^0-9] part matches any character that is not a digit, and the * means "zero or more" of these non-digit characters.
                 # re.sub(r'^[^\d]*', '', s) replaces the matched part (everything before the first digit) with an empty string, effectively removing it.
                 left_text_out = re.sub(r'^[^\d]*', '', string)
+                last_digit = re.search(r'\d(?!.*\d)', left_text_out)
+                last_digit_index = last_digit.end()
+                left_text_out = left_text_out[:last_digit_index]
                 print("Nominal and tolerance is: " + left_text_out)
                 left_text_out = left_text_out.replace("+ ", "+")
                 left_text_out = left_text_out.replace("- ", "-")
@@ -406,9 +409,19 @@ for filename in os.listdir(dir_path):
             if 'Roughness' in string or "roughness" in string:
                 print("Roughness found")
                 string = string.replace(",", ".")
-                left_text_out = re.sub(r'[^\d.]', '', string)
-                tolerance = left_text_out.split(" ", 1)[0]
+                # Regular expression to find a float number
+                # \d+ matches one or more digits.
+                # \. matches the decimal point.
+                # \d+ after the decimal point matches one or more digits (this covers the "12.5" part).
+                tolerance = re.search(r'\d+\.\d+', string)
+                tolerance = str(tolerance.group())
                 print("Tolerance is: " + tolerance)
+                if "min" in string:
+                    lower_tolerance = float(tolerance) * 1.5
+                    upper_tolerance = float(tolerance) * 2.5
+                    print("Upper tolerance is: " + str(round(upper_tolerance, 3)))
+                    print("Lower tolerance is: " + str(round(lower_tolerance, 3)))
+                    return lower_tolerance, upper_tolerance
                 lower_tolerance = float(tolerance) * 0.1
                 upper_tolerance = float(tolerance) * 0.6
                 print("Upper tolerance is: " + str(round(upper_tolerance, 3)))
@@ -416,7 +429,7 @@ for filename in os.listdir(dir_path):
                 return lower_tolerance, upper_tolerance
 
             GDandT_Symbols = ['Profile', 'Flatness', 'Concentricity', 'Perpendicularity', 'Runout', 'Parallelism',
-                        'Circularity', 'Straightness', 'Cylindricity', 'Symmetry', 'Angularity', 'Position']
+                        'Circularity', 'Straightness', 'Cylindricity', 'Symmetry', 'Angularity', '⌖']
             if any(keyword in string for keyword in GDandT_Symbols):
                 print("GD&T Symbol found")
                 string = string.replace(",", ".")
