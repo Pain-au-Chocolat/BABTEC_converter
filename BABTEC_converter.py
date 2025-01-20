@@ -65,7 +65,7 @@ for filename in os.listdir(dir_path):
         def cell_first_characteristic():
             for i in range(1,1000):
                 finder = str(sh.cell(POS_Cell_No[0]+1, i).value)
-                if any(c.isalpha() for c in finder) and finder not in ["None", "KMS"]:
+                if any(c.isalpha() for c in finder) and finder not in ["None", "KMS", "O"]:
                     return [POS_Cell_No[0]+1, i]
         POS_Cell_First_Characteristic = cell_first_characteristic()
         print("First Characteristic is at position " + str(POS_Cell_First_Characteristic))
@@ -409,12 +409,10 @@ for filename in os.listdir(dir_path):
             if 'Roughness' in string or "roughness" in string:
                 print("Roughness found")
                 string = string.replace(",", ".")
-                # Regular expression to find a float number
-                # \d+ matches one or more digits.
-                # \. matches the decimal point.
-                # \d+ after the decimal point matches one or more digits (this covers the "12.5" part).
-                tolerance = re.search(r'\d+\.\d+', string)
-                tolerance = str(tolerance.group())
+                left_text_out = re.sub(r'^[^\d]*', '', string)
+                last_digit = re.search(r'\d(?!.*\d)', left_text_out)
+                last_digit_index = last_digit.end()
+                tolerance = left_text_out[:last_digit_index]
                 print("Tolerance is: " + tolerance)
                 if "min" in string:
                     lower_tolerance = float(tolerance) * 1.5
