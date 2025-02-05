@@ -33,7 +33,7 @@ for filename in os.listdir(dir_path):
         #get Position of cell with text "No."
         def cell_no():
             for i in range(1, 1000):
-                if sh.cell(i, 1).value == "No.":
+                if sh.cell(i, 1).value == "No." or sh.cell(i, 1).value == "Č.":
                     return [i, 1]
         POS_Cell_No = cell_no()
 
@@ -54,7 +54,7 @@ for filename in os.listdir(dir_path):
         def cell_part():
             cell_no_list = []
             for i in range(1, 1000):
-                if sh.cell(POS_Cell_No[0], i).value == "Part#\n":
+                if sh.cell(POS_Cell_No[0], i).value == "Part#\n" or sh.cell(POS_Cell_No[0], i).value == "Diel číslo\n" or sh.cell(POS_Cell_No[0], i).value == "Diel číslo":
                     cell_no_list.append(POS_Cell_No[0])
                     cell_no_list.append(i)
             return cell_no_list
