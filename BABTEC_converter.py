@@ -5,11 +5,6 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 from isofits import *
-from License_file import License
-from License_file import check_expiry
-
-#Checks if user has valid license key
-License()
 
 Number_of_Files = 0
 Number_of_Characteristics = 0
@@ -513,7 +508,5 @@ else:
     print(str(Number_of_Errors) + " errors detected")
 
 print("---------------------------------------------------")
-check_expiry()
-print("---------------------------------------------------")
-print("*** Program created by unknown... ;) ***")
+print("*** Developed with love ;) ***")
 input()
